@@ -11,6 +11,9 @@ importers:
       '@portabletext/editor':
         specifier: ^1.44.10
         version: 1.44.10(@sanity/schema@3.82.0(@types/react@19.1.0)(debug@4.4.0))(@sanity/types@3.82.0(@types/react@19.1.0)(debug@4.4.0))(@types/react@19.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(rxjs@7.8.2)
+      '@sanity/color':
+        specifier: ^3.0.6
+        version: 3.0.6
       '@sanity/icons':
         specifier: ^3.7.0
         version: 3.7.0(react@19.1.0)
