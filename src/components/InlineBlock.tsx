@@ -1,9 +1,4 @@
-import {
-  BlockChildRenderProps,
-  PortableTextBlock,
-  useEditor,
-  useEditorSelector,
-} from '@portabletext/editor'
+import {BlockChildRenderProps, useEditor, useEditorSelector} from '@portabletext/editor'
 import * as selectors from '@portabletext/editor/selectors'
 import {EditIcon, TrashIcon} from '@sanity/icons'
 import {Box, Button, Flex, Popover, Text} from '@sanity/ui'
@@ -17,14 +12,7 @@ import {
   useMemo,
   useState,
 } from 'react'
-import {ArraySchemaType, BlockSchemaType, SchemaType} from 'sanity'
-import {
-  type KeyedObject,
-  ObjectSchemaType,
-  type Path,
-  pathToString,
-  RenderPreviewCallback,
-} from 'sanity'
+import {type KeyedObject, type Path, pathToString, RenderPreviewCallback} from 'sanity'
 import styled from 'styled-components'
 
 import {Root} from './InlineBlock.styles'
@@ -92,13 +80,21 @@ export function InlineBlock(props: InlineBlockProps): JSX.Element {
   })
 
   const handleRemoveButtonClicked = useCallback(() => {
-    console.log('delete')
-    // if (selectedBlock) {
-    //   editor.send({
-    //     type: 'delete.block',
-    //     blockPath: selectedBlock.path.flat(),
-    //   })
-    // }
+    if (selectedBlock) {
+      editor.send({
+        type: 'delete',
+        selection: {
+          anchor: {
+            path: selectedBlock.path,
+            offset: 0,
+          },
+          focus: {
+            path: selectedBlock.path,
+            offset: 0,
+          },
+        },
+      })
+    }
     editor.send({type: 'focus'})
   }, [editor, selectedBlock])
 

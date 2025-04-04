@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {hues} from '@sanity/color'
 import {Box, Card} from '@sanity/ui'
 import {type Theme} from '@sanity/ui/theme'

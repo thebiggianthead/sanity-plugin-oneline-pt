@@ -1,7 +1,7 @@
 import {
-  defineSchema,
   EditorEmittedEvent,
   EditorProvider,
+  EditorSchema,
   PortableTextEditable,
   RenderAnnotationFunction,
   RenderChildFunction,
@@ -13,11 +13,7 @@ import {EventListenerPlugin, MarkdownPlugin, OneLinePlugin} from '@portabletext/
 import {Box, Card, Flex, PortalProvider, ThemeProvider, usePortal, useToast} from '@sanity/ui'
 import {type JSX, useCallback, useEffect, useMemo, useState} from 'react'
 import {
-  type ArrayDefinition,
   type ArrayOfObjectsInputProps,
-  type ArrayOfType,
-  type BlockAnnotationDefinition,
-  type BlockDefinition,
   ChangeIndicator,
   type Path,
   type PortableTextBlock,
@@ -28,7 +24,7 @@ import {useDocumentPane} from 'sanity/structure'
 import styled from 'styled-components'
 
 import {toFormPatches} from '../utils'
-import {createEditorSchema} from '../utils/create-editor-schema'
+import {createEditorSchema} from '../utils/schema'
 import {Annotation} from './Annotation'
 import {annotationMap, decoratorMap} from './defaultPreviews'
 import {InlineBlock} from './InlineBlock'
@@ -87,7 +83,10 @@ export function OneLinePtInput(props: ArrayOfObjectsInputProps): JSX.Element {
   const [editablePath, setEditablePath] = useState<Path | null>(null)
   const [hasFocusWithin, setHasFocusWithin] = useState(false)
 
-  const editorSchema = useMemo(() => createEditorSchema(schemaType), [schemaType])
+  const editorSchema = useMemo(
+    () => createEditorSchema(schemaType as PortableTextInputProps['schemaType']),
+    [schemaType],
+  )
 
   // When the editor emits an event, update the form value
   const handleEditorChange = useCallback(
@@ -202,6 +201,7 @@ export function OneLinePtInput(props: ArrayOfObjectsInputProps): JSX.Element {
             <OneLinePlugin />
             <UpdateReadOnlyPlugin readOnly={readOnly || !ready} />
             <UpdateValuePlugin value={value as PortableTextBlock[]} />
+            <UpdateSchemaPlugin schema={editorSchema} />
             <MarkdownPlugin
               config={{
                 boldDecorator: ({schema}) =>
@@ -236,7 +236,7 @@ export function OneLinePtInput(props: ArrayOfObjectsInputProps): JSX.Element {
                     {...elementProps}
                   />
                 </Box>
-                <Toolbar />
+                <Toolbar setEditablePath={setEditablePath} />
               </Flex>
             </InputWrapper>
           </PortalProvider>
@@ -247,6 +247,8 @@ export function OneLinePtInput(props: ArrayOfObjectsInputProps): JSX.Element {
 }
 
 /**
+ * Duplicates an internal function from Sanity
+ *
  * `EditorProvider` doesn't have a `value` prop. Instead, this custom PTE
  * plugin listens for the prop change and sends an `update value` event to the
  * editor.
@@ -265,6 +267,8 @@ function UpdateValuePlugin(props: {value: Array<PortableTextBlock> | undefined})
 }
 
 /**
+ * Duplicates an internal function from Sanity
+ *
  * `EditorProvider` doesn't have a `readOnly` prop. Instead, this custom PTE
  * plugin listens for the prop change and sends a `toggle readOnly` event to
  * the editor.
@@ -278,6 +282,25 @@ function UpdateReadOnlyPlugin(props: {readOnly: boolean}) {
       readOnly: props.readOnly,
     })
   }, [editor, props.readOnly])
+
+  return null
+}
+
+/**
+ * We want to update the schema to ensure we remove lists, block objects
+ * and block styles for single line input compatibility. However, we need
+ * to initially set the schema to the full schema to retain previewing capabilities.
+ * This plugin updates the schema to the correct schema after the initial mount.
+ */
+function UpdateSchemaPlugin(props: {schema: EditorSchema}) {
+  const editor = useEditor()
+
+  useEffect(() => {
+    editor.send({
+      type: 'update schema',
+      schema: props.schema,
+    })
+  }, [editor, props.schema])
 
   return null
 }

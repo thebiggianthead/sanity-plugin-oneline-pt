@@ -7,7 +7,7 @@ const Strong = styled.strong`
 `
 
 const Code = styled.code`
-  mix-blend-mode: ${(props) => (props.theme.sanity.color.dark ? 'screen' : 'multiply')};
+  mix-blend-mode: ${(props) => (props.theme.sanity?.color.dark ? 'screen' : 'multiply')};
   color: inherit;
   background: var(--card-code-bg-color);
 `

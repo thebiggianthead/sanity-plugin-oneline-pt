@@ -1,10 +1,10 @@
 import type {EditorSchema, PortableTextBlock} from '@portabletext/editor'
-import type {
-  ArraySchemaType,
-  BlockSchemaType,
-  ObjectSchemaType,
-  SchemaType,
-  SpanSchemaType,
+import {
+  type ArraySchemaType,
+  type BlockSchemaType,
+  type ObjectSchemaType,
+  type SchemaType,
+  type SpanSchemaType,
 } from 'sanity'
 
 export function createEditorSchema(
@@ -50,7 +50,7 @@ export function createEditorSchema(
 }
 
 function resolveEnabledDecorators(spanType: ObjectSchemaType) {
-  return (spanType as SpanSchemaType).decorators
+  return (spanType as SpanSchemaType).decorators ?? []
 }
 
 function findBlockType(type: SchemaType): BlockSchemaType | null {
