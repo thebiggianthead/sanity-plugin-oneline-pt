@@ -10,7 +10,16 @@ import {
   useEditor,
 } from '@portabletext/editor'
 import {EventListenerPlugin, MarkdownPlugin, OneLinePlugin} from '@portabletext/editor/plugins'
-import {Box, Card, Flex, PortalProvider, ThemeProvider, usePortal, useToast} from '@sanity/ui'
+import {
+  Box,
+  Card,
+  Flex,
+  PortalProvider,
+  Stack,
+  ThemeProvider,
+  usePortal,
+  useToast,
+} from '@sanity/ui'
 import {type JSX, useCallback, useEffect, useMemo, useState} from 'react'
 import {
   type ArrayOfObjectsInputProps,
@@ -18,6 +27,7 @@ import {
   type Path,
   type PortableTextBlock,
   type PortableTextInputProps,
+  set,
   useConnectionState,
 } from 'sanity'
 import {useDocumentPane} from 'sanity/structure'
@@ -28,6 +38,7 @@ import {createEditorSchema} from '../utils/schema'
 import {Annotation} from './Annotation'
 import {annotationMap, decoratorMap} from './defaultPreviews'
 import {InlineBlock} from './InlineBlock'
+import {MergeButton} from './MergeButton'
 import {ModalForm} from './ModalForm'
 import {Toolbar} from './Toolbar'
 
@@ -92,6 +103,11 @@ export function OneLinePtInput(props: ArrayOfObjectsInputProps): JSX.Element {
   const handleEditorChange = useCallback(
     (event: EditorEmittedEvent) => {
       switch (event.type) {
+        case 'value changed':
+          if (event.value != value) {
+            onChange(set(event.value))
+          }
+          break
         case 'mutation':
           onChange(toFormPatches(event.patches))
           break
@@ -110,7 +126,7 @@ export function OneLinePtInput(props: ArrayOfObjectsInputProps): JSX.Element {
         default:
       }
     },
-    [onChange, toast],
+    [onChange, toast, value],
   )
 
   // Render a placeholder when the editor is empty
@@ -182,6 +198,8 @@ export function OneLinePtInput(props: ArrayOfObjectsInputProps): JSX.Element {
     (editorSchema.annotations?.length || 0) +
     (editorSchema.inlineObjects?.length || 0)
 
+  const tooManyBlocks = value.length > 1
+
   return (
     <ThemeProvider>
       <ChangeIndicator path={path} isChanged={changed} readOnly={!ready || readOnly} hasFocus>
@@ -217,28 +235,31 @@ export function OneLinePtInput(props: ArrayOfObjectsInputProps): JSX.Element {
                   schema.styles.find((style) => style.value === 'normal')?.value,
               }}
             />
-            <InputWrapper
-              shadow={1}
-              paddingY={buttonCount ? 1 : 2}
-              paddingRight={1}
-              paddingLeft={3}
-              radius={2}
-              tone={!ready || readOnly ? 'transparent' : 'default'}
-            >
-              <Flex gap={1} align="center">
-                <Box flex={1} overflow={'auto'} height="fill">
-                  <PortableTextEditable
-                    renderAnnotation={renderAnnotation}
-                    renderDecorator={renderDecorator}
-                    renderChild={renderInlineBlock}
-                    renderPlaceholder={renderPlaceholder}
-                    readOnly={!ready || readOnly}
-                    {...elementProps}
-                  />
-                </Box>
-                <Toolbar setEditablePath={setEditablePath} />
-              </Flex>
-            </InputWrapper>
+            <Stack space={2}>
+              <InputWrapper
+                shadow={1}
+                paddingY={buttonCount ? 1 : 2}
+                paddingRight={1}
+                paddingLeft={3}
+                radius={2}
+                tone={!ready || readOnly ? 'transparent' : 'default'}
+              >
+                <Flex gap={1} align="center">
+                  <Box flex={1} overflow={'auto'} height="fill">
+                    <PortableTextEditable
+                      renderAnnotation={renderAnnotation}
+                      renderDecorator={renderDecorator}
+                      renderChild={renderInlineBlock}
+                      renderPlaceholder={renderPlaceholder}
+                      readOnly={!ready || readOnly}
+                      {...elementProps}
+                    />
+                  </Box>
+                  <Toolbar setEditablePath={setEditablePath} />
+                </Flex>
+              </InputWrapper>
+              {tooManyBlocks && <MergeButton />}
+            </Stack>
           </PortalProvider>
         </EditorProvider>
       </ChangeIndicator>

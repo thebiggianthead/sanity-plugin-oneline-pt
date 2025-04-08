@@ -1,7 +1,10 @@
 import type {EditorSchema, PortableTextBlock} from '@portabletext/editor'
 import {
+  type ArrayOfObjectsInputProps,
   type ArraySchemaType,
   type BlockSchemaType,
+  isArraySchemaType,
+  isBlockSchemaType,
   type ObjectSchemaType,
   type SchemaType,
   type SpanSchemaType,
@@ -63,4 +66,16 @@ function findBlockType(type: SchemaType): BlockSchemaType | null {
   }
 
   return null
+}
+
+export function isOneLinePortableTextInputProps(props: ArrayOfObjectsInputProps): boolean {
+  const type = props.schemaType
+  const blockType =
+    isArraySchemaType(type) && type.of.find((memberType) => isBlockSchemaType(memberType))
+
+  if (!blockType) {
+    return false
+  }
+
+  return !!blockType?.options?.oneLine
 }
