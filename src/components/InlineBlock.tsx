@@ -83,7 +83,7 @@ export function InlineBlock(props: InlineBlockProps): JSX.Element {
     if (selectedBlock) {
       editor.send({
         type: 'delete',
-        selection: {
+        at: {
           anchor: {
             path: selectedBlock.path,
             offset: 0,
