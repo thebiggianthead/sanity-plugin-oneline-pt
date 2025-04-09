@@ -5,6 +5,11 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.0.1 (2025-04-09)</small>
+
+- fix: update pt ([61725c5](https://github.com/thebiggianthead/sanity-plugin-oneline-pt/commit/61725c5))
+- chore: update pt ([47a99e2](https://github.com/thebiggianthead/sanity-plugin-oneline-pt/commit/47a99e2))
+
 ## 1.0.0 (2025-04-08)
 
 - chore: add renovatebot and semver workflow ([ee94c38](https://github.com/thebiggianthead/sanity-plugin-oneline-pt/commit/ee94c38))
