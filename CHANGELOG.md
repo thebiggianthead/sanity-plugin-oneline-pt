@@ -5,6 +5,11 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.0.2 (2025-06-11)</small>
+
+- fix: bump deps and refactor ([fe2499e](https://github.com/thebiggianthead/sanity-plugin-oneline-pt/commit/fe2499e))
+- fix: bump deps and refactor ([2ae7b1e](https://github.com/thebiggianthead/sanity-plugin-oneline-pt/commit/2ae7b1e))
+
 ## <small>1.0.1 (2025-04-09)</small>
 
 - fix: update pt ([61725c5](https://github.com/thebiggianthead/sanity-plugin-oneline-pt/commit/61725c5))
