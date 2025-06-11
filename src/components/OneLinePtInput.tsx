@@ -1,15 +1,18 @@
 import {
-  EditorEmittedEvent,
+  type EditorChange,
+  type EditorEmittedEvent,
   EditorProvider,
-  EditorSchema,
   PortableTextEditable,
-  RenderAnnotationFunction,
-  RenderChildFunction,
-  RenderDecoratorFunction,
-  RenderPlaceholderFunction,
+  type RenderAnnotationFunction,
+  type RenderChildFunction,
+  type RenderDecoratorFunction,
+  type RenderPlaceholderFunction,
   useEditor,
 } from '@portabletext/editor'
-import {EventListenerPlugin, MarkdownPlugin, OneLinePlugin} from '@portabletext/editor/plugins'
+import {defineBehavior} from '@portabletext/editor/behaviors'
+import {BehaviorPlugin, EventListenerPlugin} from '@portabletext/editor/plugins'
+import {MarkdownShortcutsPlugin} from '@portabletext/plugin-markdown-shortcuts'
+import {OneLinePlugin} from '@portabletext/plugin-one-line'
 import {
   Box,
   Card,
@@ -27,7 +30,6 @@ import {
   type Path,
   type PortableTextBlock,
   type PortableTextInputProps,
-  set,
   useConnectionState,
 } from 'sanity'
 import {useDocumentPane} from 'sanity/structure'
@@ -72,6 +74,81 @@ const Placeholder = styled('div')`
   color: ${(props) => props.theme.sanity.color.input.default.enabled.placeholder};
 `
 
+/**
+ * Custom PTE plugin that translates `EditorEmittedEvent`s to `EditorChange`s
+ */
+function EditorChangePlugin(props: {onChange: (change: EditorChange) => void}) {
+  const handleEditorEvent = useCallback(
+    (event: EditorEmittedEvent) => {
+      switch (event.type) {
+        case 'blurred':
+          props.onChange({
+            type: 'blur',
+            event: event.event,
+          })
+          break
+        case 'error':
+          props.onChange({
+            type: 'error',
+            name: event.name,
+            level: 'warning',
+            description: event.description,
+          })
+          break
+        case 'focused':
+          props.onChange({
+            type: 'focus',
+            event: event.event,
+          })
+          break
+        case 'loading':
+          props.onChange({
+            type: 'loading',
+            isLoading: true,
+          })
+          break
+        case 'done loading':
+          props.onChange({
+            type: 'loading',
+            isLoading: false,
+          })
+          break
+        case 'invalid value':
+          props.onChange({
+            type: 'invalidValue',
+            resolution: event.resolution,
+            value: event.value,
+          })
+          break
+        case 'mutation':
+          props.onChange(event)
+          break
+        case 'patch': {
+          props.onChange(event)
+          break
+        }
+        case 'ready':
+          props.onChange(event)
+          break
+        case 'selection': {
+          props.onChange(event)
+          break
+        }
+        case 'value changed':
+          props.onChange({
+            type: 'value',
+            value: event.value,
+          })
+          break
+        default:
+      }
+    },
+    [props],
+  )
+
+  return <EventListenerPlugin on={handleEditorEvent} />
+}
+
 export function OneLinePtInput(props: ArrayOfObjectsInputProps): JSX.Element {
   const {elementProps, value = EMPTY_ARRAY, path, readOnly, changed, schemaType, onChange} = props
 
@@ -101,32 +178,27 @@ export function OneLinePtInput(props: ArrayOfObjectsInputProps): JSX.Element {
 
   // When the editor emits an event, update the form value
   const handleEditorChange = useCallback(
-    (event: EditorEmittedEvent) => {
-      switch (event.type) {
-        case 'value changed':
-          if (event.value != value) {
-            onChange(set(event.value))
-          }
-          break
+    (change: EditorChange) => {
+      switch (change.type) {
         case 'mutation':
-          onChange(toFormPatches(event.patches))
+          onChange(toFormPatches(change.patches))
           break
-        case 'focused':
+        case 'focus':
           setHasFocusWithin(true)
           break
-        case 'blurred':
+        case 'blur':
           setHasFocusWithin(false)
           break
         case 'error':
           toast.push({
-            status: 'error',
-            description: event.description,
+            status: change.level,
+            description: change.description,
           })
           break
         default:
       }
     },
-    [onChange, toast, value],
+    [onChange, toast, toFormPatches],
   )
 
   // Render a placeholder when the editor is empty
@@ -207,7 +279,7 @@ export function OneLinePtInput(props: ArrayOfObjectsInputProps): JSX.Element {
           initialConfig={{
             readOnly: !ready || !!readOnly,
             initialValue: value as PortableTextBlock[],
-            schema: schemaType as PortableTextInputProps['schemaType'],
+            schema: editorSchema.portableText,
           }}
         >
           <PortalProvider __unstable_elements={portalElements} element={portal.element}>
@@ -215,26 +287,6 @@ export function OneLinePtInput(props: ArrayOfObjectsInputProps): JSX.Element {
             {editablePath && (
               <ModalForm {...props} editablePath={editablePath} setEditablePath={setEditablePath} />
             )}
-            <EventListenerPlugin on={handleEditorChange} />
-            <OneLinePlugin />
-            <UpdateReadOnlyPlugin readOnly={readOnly || !ready} />
-            <UpdateValuePlugin value={value as PortableTextBlock[]} />
-            <UpdateSchemaPlugin schema={editorSchema} />
-            <MarkdownPlugin
-              config={{
-                boldDecorator: ({schema}) =>
-                  schema.decorators.find((decorator) => decorator.value === 'strong')?.value,
-                codeDecorator: ({schema}) =>
-                  schema.decorators.find((decorator) => decorator.value === 'code')?.value,
-                italicDecorator: ({schema}) =>
-                  schema.decorators.find((decorator) => decorator.value === 'em')?.value,
-                strikeThroughDecorator: ({schema}) =>
-                  schema.decorators.find((decorator) => decorator.value === 'strike-through')
-                    ?.value,
-                defaultStyle: ({schema}) =>
-                  schema.styles.find((style) => style.value === 'normal')?.value,
-              }}
-            />
             <Stack space={2}>
               <InputWrapper
                 shadow={1}
@@ -254,8 +306,37 @@ export function OneLinePtInput(props: ArrayOfObjectsInputProps): JSX.Element {
                       readOnly={!ready || readOnly}
                       {...elementProps}
                     />
+                    <EditorChangePlugin onChange={handleEditorChange} />
+                    <OneLinePlugin />
+                    <BehaviorPlugin
+                      behaviors={[
+                        defineBehavior({
+                          on: 'insert.soft break',
+                          actions: [],
+                        }),
+                      ]}
+                    />
+                    <UpdateReadOnlyPlugin readOnly={readOnly || !ready} />
+                    <UpdateValuePlugin value={value as PortableTextBlock[]} />
+                    <MarkdownShortcutsPlugin
+                      boldDecorator={({schema}) =>
+                        schema.decorators.find((d) => d.name === 'strong')?.name
+                      }
+                      codeDecorator={({schema}) =>
+                        schema.decorators.find((d) => d.name === 'code')?.name
+                      }
+                      italicDecorator={({schema}) =>
+                        schema.decorators.find((d) => d.name === 'em')?.name
+                      }
+                      strikeThroughDecorator={({schema}) =>
+                        schema.decorators.find((d) => d.name === 'strike-through')?.name
+                      }
+                      defaultStyle={({schema}) =>
+                        schema.styles.find((s) => s.name === 'normal')?.name
+                      }
+                    />
                   </Box>
-                  <Toolbar setEditablePath={setEditablePath} />
+                  <Toolbar editorSchema={editorSchema} setEditablePath={setEditablePath} />
                 </Flex>
               </InputWrapper>
               {tooManyBlocks && <MergeButton />}
@@ -303,25 +384,6 @@ function UpdateReadOnlyPlugin(props: {readOnly: boolean}) {
       readOnly: props.readOnly,
     })
   }, [editor, props.readOnly])
-
-  return null
-}
-
-/**
- * We want to update the schema to ensure we remove lists, block objects
- * and block styles for single line input compatibility. However, we need
- * to initially set the schema to the full schema to retain previewing capabilities.
- * This plugin updates the schema to the correct schema after the initial mount.
- */
-function UpdateSchemaPlugin(props: {schema: EditorSchema}) {
-  const editor = useEditor()
-
-  useEffect(() => {
-    editor.send({
-      type: 'update schema',
-      schema: props.schema,
-    })
-  }, [editor, props.schema])
 
   return null
 }

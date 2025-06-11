@@ -11,7 +11,7 @@ import {isOneLinePortableTextInputProps} from './utils/schema'
  *
  * ```ts
  * import {defineConfig} from 'sanity'
- * import {ptString} from 'pt-string'
+ * import {ptString} from 'sanity-plugin-oneline-pt'
  *
  * export default defineConfig({
  *   // ...
@@ -41,7 +41,7 @@ export const oneLinePortableText = definePlugin(() => {
  *
  * ```ts
  * import {defineType, defineField} from 'sanity'
- * import {ptStringPreview} from 'pt-string'
+ * import {ptStringPreview} from 'sanity-plugin-oneline-pt'
  *
  * export const post = defineType({
  *   name: 'post',
@@ -72,3 +72,37 @@ export const ptStringPreview = (targetField: string): PreviewConfig => ({
     return {title}
   },
 })
+
+/**
+ * Usage in `schemaTypes/post.ts` (or similar)
+ *
+ * ```ts
+ * import {defineType, defineField} from 'sanity'
+ * import {ptStringPreview} from 'sanity-plugin-oneline-pt'
+ *
+ * export const post = defineType({
+ *   name: 'post',
+ *   title: 'Post',
+ *   type: 'document',
+ *   fields: [
+ *     // ...
+ *   ],
+ *   preview: {
+ *     select: {
+ *       title: 'title',
+ *       author: 'author.name',
+ *       media: 'mainImage',
+ *     },
+ *     prepare(selection) {
+ *       const {author, title} = selection
+ *       return {
+ *         ...selection,
+ *         title: toPlainText(title), // this is converted to a string
+ *         subtitle: author && `by ${author}`,
+ *       }
+ *     },
+ *   },
+ * });
+ * ```
+ */
+export {toPlainText}

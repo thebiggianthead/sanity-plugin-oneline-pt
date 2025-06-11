@@ -43,19 +43,19 @@ const MOBILE_BUTTON_LIMIT = 2
 const DESKTOP_BUTTON_LIMIT = 5
 
 export function Toolbar({
+  editorSchema,
   setEditablePath,
 }: {
+  editorSchema: PortableTextMemberSchemaTypes
   setEditablePath: Dispatch<SetStateAction<Path | null>>
 }): JSX.Element {
-  const editor = useEditor()
-  const currentSchema = editor.getSnapshot().context.schema
   const mediaIndex = useMediaIndex()
   const menuId = useId()
 
   const isMobile = mediaIndex < 2
-  const decorators = currentSchema.decorators
-  const annotations = currentSchema.annotations
-  const inlineObjects = currentSchema.inlineObjects
+  const decorators = editorSchema.decorators
+  const annotations = editorSchema.annotations
+  const inlineObjects = editorSchema.inlineObjects
   const buttonLimit = isMobile ? MOBILE_BUTTON_LIMIT : DESKTOP_BUTTON_LIMIT
 
   const mainDecorators = useMemo(() => {

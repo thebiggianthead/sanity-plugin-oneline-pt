@@ -45,6 +45,8 @@
   },
   "dependencies": {
     "@portabletext/editor": "^1.45.3",
+    "@portabletext/plugin-markdown-shortcuts": "^1.0.9",
+    "@portabletext/plugin-one-line": "^1.0.12",
     "@sanity/color": "^3.0.6",
     "@sanity/icons": "^3.7.0",
     "@sanity/incompatible-plugin": "^1.0.5",
