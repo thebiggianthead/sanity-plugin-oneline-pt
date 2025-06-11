@@ -1,4 +1,4 @@
-import type {EditorSchema, PortableTextBlock} from '@portabletext/editor'
+import type {PortableTextBlock, PortableTextMemberSchemaTypes} from '@portabletext/editor'
 import {
   type ArrayOfObjectsInputProps,
   type ArraySchemaType,
@@ -12,7 +12,7 @@ import {
 
 export function createEditorSchema(
   portableTextType: ArraySchemaType<PortableTextBlock>,
-): EditorSchema {
+): PortableTextMemberSchemaTypes {
   if (!portableTextType) {
     throw new Error("Parameter 'portabletextType' missing (required)")
   }
@@ -20,6 +20,7 @@ export function createEditorSchema(
   if (!blockType) {
     throw new Error('Block type is not defined in this schema (required)')
   }
+
   const childrenField = blockType.fields?.find((field) => field.name === 'children') as
     | {type: ArraySchemaType}
     | undefined
@@ -39,17 +40,48 @@ export function createEditorSchema(
   const inlineObjectTypes = (ofType.filter((memberType) => memberType.name !== 'span') ||
     []) as ObjectSchemaType[]
 
+  const filteredPortableTextType = {
+    ...portableTextType,
+    of: portableTextType.of?.filter((field) => field.name === blockType.name) || [],
+  }
+
   return {
-    styles: [{title: 'Normal', value: 'normal'}],
+    styles: resolveStyles(blockType),
     decorators: resolveEnabledDecorators(spanType),
-    lists: [],
+    lists: removeLists(blockType),
     block: blockType,
     span: spanType,
-    portableText: portableTextType,
+    portableText: filteredPortableTextType,
     inlineObjects: inlineObjectTypes,
     blockObjects: [],
     annotations: (spanType as SpanSchemaType).annotations,
   }
+}
+
+function resolveStyles(blockType: ObjectSchemaType) {
+  const styleField = blockType.fields?.find((btField) => btField.name === 'style')
+  if (!styleField) {
+    throw new Error("A field with name 'style' is not defined in the block type (required).")
+  }
+
+  if (styleField?.type?.options) {
+    styleField.type.options.list = [{title: 'Normal', value: 'normal'}]
+  }
+
+  return styleField.type.options?.list ?? []
+}
+
+function removeLists(blockType: ObjectSchemaType) {
+  // make sure the list type is empty
+  const listField = blockType.fields?.find((btField) => btField.name === 'listItem')
+  if (!listField) {
+    throw new Error("A field with name 'listItem' is not defined in the block type (required).")
+  }
+  if (listField?.type?.options) {
+    listField.type.options.list = []
+  }
+
+  return listField.type.options?.list ?? []
 }
 
 function resolveEnabledDecorators(spanType: ObjectSchemaType) {
